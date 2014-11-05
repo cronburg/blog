@@ -712,14 +712,24 @@ map_construct_expression ::= LBRACE:l expression_pair_list:e RBRACE
     {: RESULT = new MapInitExpr(lxleft.getLine(), lxleft.getColumn(), e); :}
   ;
 
-// to avoid conflict with Imply expression
-expression_pair_list ::=
-    expression:e1 RIGHTARROW expression:e2 COMMA expression_pair_list:e3
-    {: RESULT = new ExprTupleList(e1, e2, e3); :}
-  | expression:e1 RIGHTARROW expression:e2 
+expression_pair ::=
+    expression:e1 RIGHTARROW expression:e2 
     {: RESULT = new ExprTupleList(e1, e2, null); :}
   ;
-  
+
+expression_pair_comma ::=
+    expression:e1 RIGHTARROW expression:e2 COMMA expression_pair_list:e3
+    {: RESULT = new ExprTupleList(e1, e2, e3); :}
+  ;
+
+// to avoid conflict with Imply expression
+expression_pair_list ::= 
+    expression_pair_comma:epc
+    {: RESULT = epc; :}
+  | expression_pair:ep
+    {: RESULT = ep; :}
+  ;
+
 number_expr ::= NUMSIGN:n set_expr:e
     {: RESULT = new NumberExpr(nxleft.getLine(), nxleft.getColumn(), e); :}
   | NUMSIGN:n type:ty
@@ -762,6 +772,13 @@ comprehension_expr ::= expression_list:elst FOR type_var_lst:vars opt_colon_expr
         error(elstxleft, "error in the comprehension");
         RESULT = null;
       } else RESULT = new Absyn[] {elst, vars, condexpr };
+    :}
+  | expression_pair:ep FOR type_var_lst:vars opt_colon_expr:condexpr
+    {:
+      if (elst == null || vars == null) {
+        error(elstxleft, "error in the comprehension");
+        RESULT = null;
+      } else RESULT = new Absyn[] {ep, vars, condexpr }; 
     :}
   ;
 
